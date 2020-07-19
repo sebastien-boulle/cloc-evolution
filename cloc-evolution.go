@@ -116,30 +116,18 @@ func (s BySemverNumber) Less(i, j int) bool {
 	a := s[i]
 	b := s[j]
 
-	r := regexp.MustCompile("([0-9]+)\\.?")
+	r := regexp.MustCompile("^([0-9]+)")
 
 	matches_a := r.FindAllStringSubmatch(a, -1)
 	matches_b := r.FindAllStringSubmatch(b, -1)
 
-	min_len := min(len(matches_a), len(matches_b))
+	a_int, _ := strconv.Atoi(matches_a[0][1])
+	b_int, _ := strconv.Atoi(matches_b[0][1])
 
-	for i := 0; i < min_len; i++ {
-		a_int, _ := strconv.Atoi(matches_a[i][1])
-		b_int, _ := strconv.Atoi(matches_b[i][1])
-		if a_int < b_int {
-			return true
-		} else {
-			if b_int < a_int {
-				return false
-			}
-		}
-	}
 
-	if len(matches_a) < len(matches_b) {
-		return true
-	}
-
-	return false
+	fmt.Printf("Test: %s: %s\n", a, matches_a[0][1])
+	fmt.Printf("Test: %s: %s\n", b, matches_b[0][1])
+	return a_int < b_int;
 }
 func (s BySemverNumber) Len() int {
 
@@ -179,13 +167,28 @@ func getRepo(targetdir string) (*git.Repository) {
 	return repo
 }
 
+func Filter(vs []string, f func(string) bool) []string {
+    vsf := make([]string, 0)
+    for _, v := range vs {
+        if f(v) {
+            vsf = append(vsf, v)
+        }
+    }
+    return vsf
+}
+
 // sort.Sort sorts inline
 func getSortedTags(repo *git.Repository) ([]string) {
 	tags, err := repo.Tags.List()
 	checkErr(err)
 
-	sort.Sort(BySemverNumber(tags))
-	return tags
+	majors := Filter(tags, func (v string) bool {
+		r := regexp.MustCompile("^[0-9]+-0(-0)?$")
+		return r.MatchString(v);
+	})
+
+	sort.Sort(BySemverNumber(majors));
+	return majors;
 }
 
 func checkOutAndCloc(repo *git.Repository, tag, targetdir string) ([]byte) {

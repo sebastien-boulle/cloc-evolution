@@ -15,7 +15,7 @@ import "strings"
 import "text/template"
 import "os/exec"
 
-import "github.com/libgit2/git2go"
+import "gopkg.in/libgit2/git2go.v28"
 
 type VersionLoc struct {
 	Version string
